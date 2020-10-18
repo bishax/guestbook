@@ -33,3 +33,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+ul.messages {
+  list-style: none;
+}
+
+ul.messages li {
+  padding: 0.5em;
+  /* Dotted line at end of message */
+  border-bottom: 1px dotted #ccc;
+}
+
+ul.messages li:last-child {
+  /* No dotted line for last message */
+  border-bottom: none;
+}
+
+li time {
+  font-size: 0.75em;
+  /* Transparency */
+  color: rgba(0, 0, 0, 0.5);
+}
