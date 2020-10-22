@@ -36,7 +36,7 @@
 
   :min-lein-version "2.0.0"
   
-  :source-paths ["src/clj"]
+  :source-paths ["src/clj" "src/cljc"]
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
   :target-path "target/%s/"
@@ -46,7 +46,7 @@
 
   :cljsbuild
   {:builds
-   {:app {:source-paths ["src/cljs"] ; Where cljs source lives
+   {:app {:source-paths ["src/cljs" "src/cljc"] ; Where cljs source lives
           :compiler {:output-to "target/cljsbuild/public/js/app.js" ; name of resulting js file
                      :output-dir "target/cljsbuild/public/js/out"  ; where temporary js files are generated
                      :main "guestbook.core"  ; cljs app entrypoint
