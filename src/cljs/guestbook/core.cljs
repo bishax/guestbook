@@ -1,12 +1,13 @@
 (ns guestbook.core
   (:require [reagent.core :as r]
             [reagent.dom :as dom]
+            [re-frame.core :as rf]
             [ajax.core :refer [GET POST]]
             [clojure.string :as string]
             [guestbook.validation :refer [validate-message]]))
 
 
-(defn message-form [messages]
+(defn message-form []
   (let [fields (r/atom {})
         errors (r/atom nil)]
     (fn []
@@ -28,9 +29,15 @@
        [:input.button.is-primary
         {:type :submit
          :value "comment"
-         :on-click #(send-message! fields errors messages)}]])))
+         :on-click #(send-message! fields errors)}]])))
 
-(defn send-message! [fields errors messages]
+(rf/reg-event-db
+ ; "DB event for adding new message"
+ :message/add
+ (fn [db [_ message]]
+   (update db :messages/list conj message)))
+
+(defn send-message! [fields errors]
   (if-let [validation-errors (validate-message @fields)]
     (reset! errors validation-errors)
     (POST "/message"
@@ -39,8 +46,7 @@
                    "x-csrf-token" (.-value (.getElementById js/document "token"))}
          :params @fields
          :handler #(do
-                     (.log js/console (str "response:" %))
-                     (swap! messages conj (assoc @fields :timestamp (js/Date.)))
+                     (rf/dispatch [:message/add (assoc @fields :timestamp (js/Date.))])
                      (reset! fields nil)
                      (reset! errors nil))
          :error-handler #(do
@@ -51,13 +57,26 @@
   (when-let [error (id @errors)]
         [:div.notification.is-danger (string/join error)]))
 
-(defn get-messages [messages]
+(rf/reg-event-db
+ ;"DB event for getting messages"
+ :messages/set
+ (fn [db [_ messages]]
+   (-> db
+       (assoc :messages/loading? false
+              :messages/list messages))))
+
+(rf/reg-sub
+ ;"Subscription for getting messages"
+ :messages/list
+ (fn [db _]
+   (:messages/list db [])))
+
+(defn get-messages []
   (GET "/messages"
        {:headers {"Accept" "application/transit+json"}
-        :handler #(reset! messages (:messages %))}))
+        :handler #(rf/dispatch [:messages/set (:messages %)])}))
 
 (defn message-list [messages]
-  (println messages)
   [:ul.messages
    (for [{:keys [timestamp message name]} @messages]
     ^{:key timestamp}
@@ -66,16 +85,33 @@
       [:p message]
       [:p " - " name]])])
 
+(rf/reg-event-fx
+ ;"Initialisation event, while loading data"
+ :app/initialize
+ (fn [_ _]
+   {:db {:messages/loading? true}}))
+
+
+(rf/reg-sub
+ ;"Subscription for message loading"
+ :messages/loading?
+ (fn [db _]
+   (:messages/loading? db)))
+
 (defn home []
-  (let [messages (r/atom nil)]
-    (get-messages messages)
+  (let [messages (rf/subscribe [:messages/list])]
+    (rf/dispatch [:app/initialize])
+    (get-messages)
     (fn []
-        [:div.content>div.columns.is-centered>div.column.is-two-thirds
+      [:div.content>div.columns.is-centered>div.column.is-two-thirds
+       (if @(rf/subscribe [:messages/loading?])
+        [:h3 "Loading Messages..."]
+        [:div
          [:div.columns>div.column
           [:h3 "Messages"]
           [message-list messages]]
          [:div.columns>div.column
-          [message-form messages]]])))
+          [message-form]]])])))
 
 (dom/render
  [home]
