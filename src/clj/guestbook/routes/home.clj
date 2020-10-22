@@ -9,7 +9,7 @@
    [guestbook.validation :refer [validate-message]]))
 
 (defn home-page [request]
-  (layout/render request "home.html" (merge {:messages (db/get-messages)})))
+  (layout/render request "home.html"))
 
 (defn about-page [request]
   (layout/render request "about.html"))
@@ -24,10 +24,14 @@
           (response/internal-server-error
            {:errors {:server-error ["Failed to save message!"]}})))))
 
+(defn message-list [_]
+  (response/ok {:messages (vec (db/get-messages))}))
+
 (defn home-routes []
   [""
    {:middleware [middleware/wrap-csrf
                  middleware/wrap-formats]}
    ["/" {:get home-page}]
    ["/about" {:get about-page}]
-   ["/message" {:post save-message!}]])
+   ["/message" {:post save-message!}]
+   ["/messages" {:get message-list}]])
