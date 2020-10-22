@@ -29,17 +29,39 @@
                  [ring-webjars "0.2.0"]
                  [ring/ring-core "1.8.0"]
                  [ring/ring-defaults "0.3.2"]
-                 [selmer "1.12.18"]]
+                 [selmer "1.12.18"]
+                 [org.clojure/clojurescript "1.10.238" :scope "provided"]
+                 [reagent "0.10.0"]
+                 [cljs-ajax "0.8.0"]]
 
   :min-lein-version "2.0.0"
   
   :source-paths ["src/clj"]
   :test-paths ["test/clj"]
-  :resource-paths ["resources"]
+  :resource-paths ["resources" "target/cljsbuild"]
   :target-path "target/%s/"
   :main ^:skip-aot guestbook.core
 
-  :plugins []
+  :plugins [[lein-cljsbuild "1.1.7"]]
+
+  :cljsbuild
+  {:builds
+   {:app {:source-paths ["src/cljs"] ; Where cljs source lives
+          :compiler {:output-to "target/cljsbuild/public/js/app.js" ; name of resulting js file
+                     :output-dir "target/cljsbuild/public/js/out"  ; where temporary js files are generated
+                     :main "guestbook.core"  ; cljs app entrypoint
+                     :asset-path "/js/out"  ; supporting js assets
+                     :optimizations :none
+                     :source-map true  ; map from compiled js to original cljs source
+                     :pretty-print true}}}}
+
+  :cleantargets  ; delete js generated in target/cljsbuild when `lein clean` is run
+  ^{:protect false}
+  [:target-path
+   [:cljsbuild :builds :app :compiler :output-dir]
+   [:cljsbuild :builds :app :compiler :output-to]]
+
+
 
   :profiles
   {:uberjar {:omit-source true
