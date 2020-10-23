@@ -49,7 +49,8 @@
   {:uberjar {:omit-source true
              :aot :all
              :uberjar-name "guestbook.jar"
-             :source-paths ["env/prod/clj"]
+             :source-paths ["env/prod/clj" "env/prod/cljc" "env/prod/cljs"]
+             :prep-tasks ["compile" ["run" "-m" "shadow.cljs.devtools.cli" "release" "app"]]
              :resource-paths ["env/prod/resources"]}
 
    :dev           [:project/dev :profiles/dev]
