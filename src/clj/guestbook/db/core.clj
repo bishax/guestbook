@@ -4,7 +4,10 @@
     [conman.core :as conman]
     [java-time.pre-java8 :as jt]
     [mount.core :refer [defstate]]
-    [guestbook.config :refer [env]]))
+    [guestbook.config :refer [env]]
+    [java-time :refer [java-date]]))
+
+
 
 (defstate ^:dynamic *db*
           :start (conman/connect! {:jdbc-url (env :database-url)})
@@ -16,7 +19,7 @@
 (extend-protocol jdbc/IResultSetReadColumn
   java.sql.Timestamp
   (result-set-read-column [v _2 _3]
-    (.toLocalDateTime v))
+    (java-date (.atZone (.toLocalDateTime v) (java.time.ZoneId/systemDefault))))
   java.sql.Date
   (result-set-read-column [v _2 _3]
     (.toLocalDate v))
