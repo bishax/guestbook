@@ -11,10 +11,10 @@
 (defn service-routes []
   ["/api"
    {:middleware [middleware/wrap-formats]}
-   ["/messages" {:get
+   ["/api/messages" {:get
                  (fn [_]
                    (response/ok (msg/message-list)))}]
-   ["/message" {:post
+   ["/api/message" {:post
                 (fn [{:keys [params]}]
                   (try
                     (msg/save-message! params)
