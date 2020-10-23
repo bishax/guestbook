@@ -30,10 +30,11 @@
                  [ring/ring-core "1.8.0"]
                  [ring/ring-defaults "0.3.2"]
                  [selmer "1.12.18"]
-                 [org.clojure/clojurescript "1.10.238" :scope "provided"]
+                 [org.clojure/clojurescript "1.10.773" :scope "provided"]
                  [reagent "0.10.0"]
                  [re-frame "1.0.0"]
-                 [cljs-ajax "0.8.0"]]
+                 [cljs-ajax "0.8.0"]
+                 [thheller/shadow-cljs "2.11.5"]]
 
   :min-lein-version "2.0.0"
   
