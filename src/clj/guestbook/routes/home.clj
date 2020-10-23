@@ -1,12 +1,9 @@
 (ns guestbook.routes.home
   (:require
    [guestbook.layout :as layout]
-   [guestbook.db.core :as db]
-   [clojure.java.io :as io]
    [guestbook.middleware :as middleware]
-   [ring.util.response]
-   [ring.util.http-response :as response]
-   [guestbook.validation :refer [validate-message]]))
+   [guestbook.messages :as msg]
+   [ring.util.http-response :as response]))
 
 (defn home-page [request]
   (layout/render request "home.html"))
@@ -15,17 +12,21 @@
   (layout/render request "about.html"))
 
 (defn save-message! [{:keys [params]}]
-  (if-let [errors (validate-message params)]
-    (response/bad-request {:errors errors})
-    (try
-        (db/save-message! params) ; add message to DB
-        (response/ok {:status :ok})
-        (catch Exception e
+  (try
+    (msg/save-message!)
+    (response/ok {:status :ok})
+    (catch Exception e
+      (let [{id :guestbook/error-id
+             errors :errors} (ex-data e)]
+        (case id
+          :validation
+          (response/bad-request {:errors errors})
+          ;; else
           (response/internal-server-error
-           {:errors {:server-error ["Failed to save message!"]}})))))
+           {:errors {:server-error ["Failed to save message!"]}}))))))
 
 (defn message-list [_]
-  (response/ok {:messages (vec (db/get-messages))}))
+  (response/ok (msg/message-list)))
 
 (defn home-routes []
   [""
