@@ -10,5 +10,5 @@
                      :errors errors}))
     (db/save-message! message)))
 
-(defn message-list [_]
+(defn message-list []
   {:messages (vec (db/get-messages))})
