@@ -37,32 +37,11 @@
 
   :min-lein-version "2.0.0"
   
-  :source-paths ["src/clj" "src/cljc"]
+  :source-paths ["src/clj" "src/cljc" "src/cljs"]
   :test-paths ["test/clj"]
   :resource-paths ["resources" "target/cljsbuild"]
   :target-path "target/%s/"
   :main ^:skip-aot guestbook.core
-
-  :plugins [[lein-cljsbuild "1.1.7"]]
-
-  :cljsbuild
-  {:builds
-   {:app {:source-paths ["src/cljs" "src/cljc"] ; Where cljs source lives
-          :compiler {:output-to "target/cljsbuild/public/js/app.js" ; name of resulting js file
-                     :output-dir "target/cljsbuild/public/js/out"  ; where temporary js files are generated
-                     :main "guestbook.core"  ; cljs app entrypoint
-                     :asset-path "/js/out"  ; supporting js assets
-                     :optimizations :none
-                     :source-map true  ; map from compiled js to original cljs source
-                     :pretty-print true}}}}
-
-  :cleantargets  ; delete js generated in target/cljsbuild when `lein clean` is run
-  ^{:protect false}
-  [:target-path
-   [:cljsbuild :builds :app :compiler :output-dir]
-   [:cljsbuild :builds :app :compiler :output-to]]
-
-
 
   :profiles
   {:uberjar {:omit-source true
@@ -78,11 +57,12 @@
                   :dependencies [[pjstadig/humane-test-output "0.10.0"]
                                  [prone "2019-07-08"]
                                  [ring/ring-devel "1.8.0"]
-                                 [ring/ring-mock "0.4.0"]]
+                                 [ring/ring-mock "0.4.0"]
+                                 [binaryage/devtools "0.9.10"]]
                   :plugins      [[com.jakemccrary/lein-test-refresh "0.24.1"]
                                  [jonase/eastwood "0.3.5"]]
                   
-                  :source-paths ["env/dev/clj"]
+                  :source-paths ["env/dev/clj" "env/dev/cljs" "env/dev/cljc"]
                   :resource-paths ["env/dev/resources"]
                   :repl-options {:init-ns user}
                   :injections [(require 'pjstadig.humane-test-output)

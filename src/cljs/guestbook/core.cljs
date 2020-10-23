@@ -100,8 +100,6 @@
 
 (defn home []
   (let [messages (rf/subscribe [:messages/list])]
-    (rf/dispatch [:app/initialize])
-    (get-messages)
     (fn []
       [:div.content>div.columns.is-centered>div.column.is-two-thirds
        (if @(rf/subscribe [:messages/loading?])
@@ -113,6 +111,14 @@
          [:div.columns>div.column
           [message-form]]])])))
 
-(dom/render
- [home]
- (.getElementById js/document "content"))
+(defn ^:dev/after-load mount-components []
+  (rf/clear-subscription-cache!)
+  (.log js/console "Mounting components")
+  (dom/render [#'home] (.getElementById js/document "content"))
+  (.log js/console "Components mounted!"))
+
+(defn init! []
+  (.log js/console "Components mounted!")
+  (rf/dispatch [:app/initialize])
+  (get-messages)
+  (mount-components))
