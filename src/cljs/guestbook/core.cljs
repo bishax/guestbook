@@ -7,30 +7,6 @@
             [guestbook.validation :refer [validate-message]]))
 
 
-(defn message-form []
-  (let [fields (r/atom {})
-        errors (r/atom nil)]
-    (fn []
-      [:div
-       [errors-component errors :server-error]
-       [:div.field
-        [:label.label {:for :name} "Name"]
-        [errors-component errors :name]
-        [:input.input {:type :text
-                       :name :name
-                       :value (:name @fields)
-                       :on-change #(swap! fields assoc :name (-> % .-target .-value))}]]
-       [:div.field
-        [:label.label {:for :message} "Message"]
-        [errors-component errors :message]
-        [:textarea.textarea {:name :message
-                             :value (:message @fields)
-                             :on-change #(swap! fields assoc :message (-> % .-target .-value))}]]
-       [:input.button.is-primary
-        {:type :submit
-         :value "comment"
-         :on-click #(send-message! fields errors)}]])))
-
 (rf/reg-event-db
  ; "DB event for adding new message"
  :message/add
@@ -56,6 +32,30 @@
 (defn errors-component [errors id]
   (when-let [error (id @errors)]
         [:div.notification.is-danger (string/join error)]))
+
+(defn message-form []
+  (let [fields (r/atom {})
+        errors (r/atom nil)]
+    (fn []
+      [:div
+       [errors-component errors :server-error]
+       [:div.field
+        [:label.label {:for :name} "Name"]
+        [errors-component errors :name]
+        [:input.input {:type :text
+                       :name :name
+                       :value (:name @fields)
+                       :on-change #(swap! fields assoc :name (-> % .-target .-value))}]]
+       [:div.field
+        [:label.label {:for :message} "Message"]
+        [errors-component errors :message]
+        [:textarea.textarea {:name :message
+                             :value (:message @fields)
+                             :on-change #(swap! fields assoc :message (-> % .-target .-value))}]]
+       [:input.button.is-primary
+        {:type :submit
+         :value "comment"
+         :on-click #(send-message! fields errors)}]])))
 
 (rf/reg-event-db
  ;"DB event for getting messages"
@@ -118,7 +118,7 @@
   (.log js/console "Components mounted!"))
 
 (defn init! []
-  (.log js/console "Components mounted!")
+  (.log js/console "Initialising app")
   (rf/dispatch [:app/initialize])
   (get-messages)
   (mount-components))
