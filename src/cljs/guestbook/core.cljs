@@ -13,49 +13,110 @@
  (fn [db [_ message]]
    (update db :messages/list conj message)))
 
-(defn send-message! [fields errors]
-  (if-let [validation-errors (validate-message @fields)]
-    (reset! errors validation-errors)
+(rf/reg-event-fx
+ :message/send!
+ (fn [{:keys [db]} [_ fields]]
     (POST "/api/message"
         {:format :json
          :headers {"Accept" "application/transit+json"
                    "x-csrf-token" (.-value (.getElementById js/document "token"))}
-         :params @fields
-         :handler #(do
-                     (rf/dispatch [:message/add (assoc @fields :timestamp (js/Date.))])
-                     (reset! fields nil)
-                     (reset! errors nil))
-         :error-handler #(do
-                           (.log js/console (str %))
-                           (reset! errors (get-in % [:response :errors])))})))
+         :params fields
+         :handler #(rf/dispatch [:message/add (-> fields
+                                                  (assoc :timestamp (js/Date.)))])
+         :error-handler #(rf/dispatch
+                          [:form/set-server-errors
+                           (get-in % [:response :errors])])})
+    {:db (dissoc db :form/server-errors)}))
 
-(defn errors-component [errors id]
-  (when-let [error (id @errors)]
+(defn errors-component [ id]
+  (when-let [error @(rf/subscribe [:form/error id])]
         [:div.notification.is-danger (string/join error)]))
 
 (defn message-form []
-  (let [fields (r/atom {})
-        errors (r/atom nil)]
-    (fn []
-      [:div
-       [errors-component errors :server-error]
+    [:div
+       [errors-component :server-error]
        [:div.field
         [:label.label {:for :name} "Name"]
-        [errors-component errors :name]
+        [errors-component :name]
         [:input.input {:type :text
                        :name :name
-                       :value (:name @fields)
-                       :on-change #(swap! fields assoc :name (-> % .-target .-value))}]]
+                       :value @(rf/subscribe [:form/field :name])
+                       :on-change #(rf/dispatch [:form/set-field
+                                                 :name
+                                                 (.. % -target -value)])}]]
        [:div.field
         [:label.label {:for :message} "Message"]
-        [errors-component errors :message]
+        [errors-component :message]
         [:textarea.textarea {:name :message
-                             :value (:message @fields)
-                             :on-change #(swap! fields assoc :message (-> % .-target .-value))}]]
+                             :value @(rf/subscribe [:form/field :message])
+                             :on-change #(rf/dispatch [:form/set-field
+                                                       :message
+                                                       (.. % -target -value)])}]]
        [:input.button.is-primary
         {:type :submit
+         :disabled @(rf/subscribe [:form/validation-errors?])
          :value "comment"
-         :on-click #(send-message! fields errors)}]])))
+         :on-click #(rf/dispatch [:message/send! @(rf/subscribe [:form/fields])])}]])
+
+(rf/reg-event-db
+ :form/set-field
+ [(rf/path :form/fields)]  ; interceptor vector (similar to middleware)
+ (fn [fields [_ id value]]
+  (assoc fields id value)))
+
+(rf/reg-event-db
+ :form/clear-fields
+ [(rf/path :form/fields)]
+ (fn [_ _]
+   {}))
+
+(rf/reg-sub
+ :form/fields
+ (fn [db _]
+   (:form/fields db)))
+
+(rf/reg-sub
+ :form/field
+ :<- [:form/fields]  ; derived subscription
+ (fn [fields [_ id]]
+   (get fields id)))
+
+(rf/reg-event-db
+ :form/set-server-errors
+ [(rf/path :form/server-errors)]
+ (fn [_ [_ errors]]
+   errors))
+
+(rf/reg-sub
+ :form/server-errors
+ (fn [db _]
+   (:form/server-errors db)))
+
+;;Validation errors are reactively computed
+(rf/reg-sub
+ :form/validation-errors
+ :<- [:form/fields]
+ (fn [fields _]
+   (validate-message fields)))
+
+(rf/reg-sub
+ :form/validation-errors?
+ :<- [:form/validation-errors]
+ (fn [errors _]
+   (not (empty? errors))))
+
+(rf/reg-sub
+ :form/errors
+ :<- [:form/validation-errors]
+ :<- [:form/server-errors]
+ (fn [[validation server] _]
+   (merge validation server)))
+
+(rf/reg-sub
+ :form/error
+ :<- [:form/errors]
+ (fn [errors [_ id]]
+   (get errors id)))
 
 (rf/reg-event-db
  ;"DB event for getting messages"
@@ -71,11 +132,6 @@
  (fn [db _]
    (:messages/list db [])))
 
-(defn get-messages []
-  (GET "/api/messages"
-       {:headers {"Accept" "application/transit+json"}
-        :handler #(rf/dispatch [:messages/set (:messages %)])}))
-
 (defn message-list [messages]
   [:ul.messages
    (for [{:keys [timestamp message name]} @messages]
@@ -89,8 +145,16 @@
  ;"Initialisation event, while loading data"
  :app/initialize
  (fn [_ _]
-   {:db {:messages/loading? true}}))
+   {:db {:messages/loading? true}
+    :dispatch [:messages/load]}))
 
+(rf/reg-event-fx
+ :messages/load
+ (fn [{:keys [db]} _]
+  (GET "/api/messages"
+       {:headers {"Accept" "application/transit+json"}
+        :handler #(rf/dispatch [:messages/set (:messages %)])})
+  {:db (assoc db :messages/loading? true)}))
 
 (rf/reg-sub
  ;"Subscription for message loading"
@@ -120,5 +184,4 @@
 (defn init! []
   (.log js/console "Initialising app")
   (rf/dispatch [:app/initialize])
-  (get-messages)
   (mount-components))
