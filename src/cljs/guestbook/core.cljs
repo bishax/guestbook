@@ -162,18 +162,26 @@
  (fn [db _]
    (:messages/loading? db)))
 
+(defn reload-messages-button []
+  (let [loading? (rf/subscribe [:messages/loading?])]
+    [:button.button.is-info.is-fullwidth
+     {:on-click #(rf/dispatch [:messages/load])
+      :disabled @loading?}
+     (if @loading?
+       "Loading Messages"
+       "Refresh Messages")]))
+
 (defn home []
   (let [messages (rf/subscribe [:messages/list])]
     (fn []
       [:div.content>div.columns.is-centered>div.column.is-two-thirds
-       (if @(rf/subscribe [:messages/loading?])
-        [:h3 "Loading Messages..."]
-        [:div
          [:div.columns>div.column
           [:h3 "Messages"]
           [message-list messages]]
          [:div.columns>div.column
-          [message-form]]])])))
+          [reload-messages-button]]
+         [:div.columns>div.column
+          [message-form]]])))
 
 (defn ^:dev/after-load mount-components []
   (rf/clear-subscription-cache!)
