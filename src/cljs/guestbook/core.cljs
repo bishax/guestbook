@@ -4,7 +4,8 @@
             [re-frame.core :as rf]
             [ajax.core :refer [GET POST]]
             [clojure.string :as string]
-            [guestbook.validation :refer [validate-message]]))
+            [guestbook.validation :refer [validate-message]]
+            [guestbook.websockets :as ws]))
 
 
 (rf/reg-event-db
@@ -16,17 +17,15 @@
 (rf/reg-event-fx
  :message/send!
  (fn [{:keys [db]} [_ fields]]
-    (POST "/api/message"
-        {:format :json
-         :headers {"Accept" "application/transit+json"
-                   "x-csrf-token" (.-value (.getElementById js/document "token"))}
-         :params fields
-         :handler #(rf/dispatch [:message/add (-> fields
-                                                  (assoc :timestamp (js/Date.)))])
-         :error-handler #(rf/dispatch
-                          [:form/set-server-errors
-                           (get-in % [:response :errors])])})
-    {:db (dissoc db :form/server-errors)}))
+   (ws/send-message! fields)
+   {:db (dissoc db :form/server-errors)}))
+
+(defn handle-response! [response]
+  (if-let [errors (:errors response)]
+    (rf/dispatch [:form/set-server-errors errors])
+    (do
+      (rf/dispatch [:message/add response])
+      (rf/dispatch [:form/clear-fields response]))))
 
 (defn errors-component [ id]
   (when-let [error @(rf/subscribe [:form/error id])]
@@ -192,4 +191,5 @@
 (defn init! []
   (.log js/console "Initialising app")
   (rf/dispatch [:app/initialize])
+  (ws/connect! (str "ws://" (.-host js/location) "/ws") handle-response!)
   (mount-components))
