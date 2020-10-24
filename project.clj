@@ -35,7 +35,8 @@
                  [re-frame "1.0.0"]
                  [cljs-ajax "0.8.0"]
                  [thheller/shadow-cljs "2.11.5"]
-                 [day8.re-frame/re-frame-10x "0.7.0"]]
+                 [day8.re-frame/re-frame-10x "0.7.0"]
+                 [com.taoensso/sente "1.15.0"]]
 
   :min-lein-version "2.0.0"
   
