@@ -47,25 +47,44 @@
        [:div.field
         [:label.label {:for :name} "Name"]
         [errors-component :name]
-        [:input.input {:type :text
-                       :name :name
-                       :value @(rf/subscribe [:form/field :name])
-                       :on-change #(rf/dispatch [:form/set-field
-                                                 :name
-                                                 (.. % -target -value)])}]]
+        [text-input {:type :input.input
+                     :attrs {:name :name}
+                     :value (rf/subscribe [:form/field :name])
+                     :on-save #(rf/dispatch [:form/set-field :name %])}]]
        [:div.field
         [:label.label {:for :message} "Message"]
         [errors-component :message]
-        [:textarea.textarea {:name :message
-                             :value @(rf/subscribe [:form/field :message])
-                             :on-change #(rf/dispatch [:form/set-field
-                                                       :message
-                                                       (.. % -target -value)])}]]
+        [text-input {:type :textarea.textarea
+                     :attrs {:name :message}
+                     :value (rf/subscribe [:form/field :message])
+                     :on-save #(rf/dispatch [:form/set-field :message %])}]]
        [:input.button.is-primary
         {:type :submit
          :disabled @(rf/subscribe [:form/validation-errors?])
          :value "comment"
          :on-click #(rf/dispatch [:message/send! @(rf/subscribe [:form/fields])])}]])
+
+(defn text-input [{type  :type
+                   val :value
+                   attrs :attrs
+                   :keys [on-save]}]
+  (let [draft (r/atom nil)
+        value (r/track #(or @draft @val ""))]
+    (fn []
+      [type ;:input.input
+       (merge attrs
+              {:type :text
+               ; clicking on text-area makes draft atom
+               ; either empty or app-db value [:form/field :name]
+               :on-focus #(reset! draft (or @val ""))
+               ; clicking off text-area saves @draft
+               ; (e.g. by saving to app-db) and empties @draft
+               :on-blur (fn []
+                          (on-save (or @draft ""))
+                          (reset! draft nil))
+               ; changes to value tracked in draft
+               :on-change #(reset! draft (.. % -target -value))
+               :value @value})])))
 
 (rf/reg-event-db
  :form/set-field
