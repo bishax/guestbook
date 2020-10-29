@@ -12,7 +12,8 @@
    [guestbook.messages :as msg]
    [guestbook.middleware :as middleware]
    [guestbook.middleware.formats :as formats]
-   [ring.util.http-response :as response]))
+   [ring.util.http-response :as response]
+   [spec-tools.data-spec :as ds]))
 
 (defn service-routes []
   ["/api"
@@ -124,4 +125,26 @@
                             ::auth/duplicate-user)
                        (response/conflict
                         {:message "Registration failed! User with login already exists!"})
-                       (throw e))))))}}]])
+                       (throw e))))))}}]
+   ["/session"
+    {:get {:responses
+           {200
+            {:body
+             {:session
+              {:identity
+               (ds/maybe
+                {:login string?
+                 :created_at inst?})}}}}
+           :handler
+           (fn [{{:keys [identity]} :session}]
+             (response/ok {:session
+                           {:identity
+                            (not-empty
+                             (select-keys identity [:login :created_at]))}}))}}]
+   ["/logout" ;; TODO : Does anything need to happen server-side?
+    {:post {:responses
+            {200
+             {:body map?}}
+            :handler
+            (fn [_]
+              (response/ok {}))}}]])
