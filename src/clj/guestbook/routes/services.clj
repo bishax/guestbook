@@ -8,6 +8,7 @@
    [reitit.ring.middleware.exception :as exception]
    [reitit.ring.middleware.multipart :as multipart]
    [reitit.ring.middleware.parameters :as parameters]
+   [guestbook.auth :as auth]
    [guestbook.messages :as msg]
    [guestbook.middleware :as middleware]
    [guestbook.middleware.formats :as formats]
@@ -31,9 +32,9 @@
                  coercion/coerce-request-middleware
                  ;; multipart params
                  multipart/multipart-middleware]
-    :muuntaja formats/instance
-    :coercion spec-coercion/coercion
-    :swagger {:id :api}}
+    :muuntaja   formats/instance
+    :coercion   spec-coercion/coercion
+    :swagger    {:id :api}}
    ["" {:no-doc true}
     ["/swagger.json"
      {:get (swagger/create-swagger-handler)}]
@@ -45,9 +46,9 @@
                   {200
                    {:body ;; Data spec for response body
                     {:messages
-                     [{:id pos-int?
-                       :name string?
-                       :message string?
+                     [{:id        pos-int?
+                       :name      string?
+                       :message   string?
                        :timestamp inst?}]}}}
 
                   :handler
@@ -56,11 +57,11 @@
    ["/message" {:post
                 {:parameters
                  {:body ;; Data spec for request body parameters
-                  {:name string?
+                  {:name    string?
                    :message string?}}
                  :responses
-                  {200 {:body map?}
-                   500 {:errors map?}}
+                 {200 {:body map?}
+                  500 {:errors map?}}
 
                  :handler
                  (fn [{{params :body} :parameters}]
@@ -68,11 +69,59 @@
                      (msg/save-message! params)
                      (response/ok {:status :ok})
                      (catch Exception e
-                       (let [{id :guestbook/error-id
+                       (let [{id     :guestbook/error-id
                               errors :errors} (ex-data e)]
                          (case id
-                          :validation
-                          (response/bad-request {:errors errors})
+                           :validation
+                           (response/bad-request {:errors errors})
                            ;; else
-                          (response/internal-server-error
-                           {:errors {:server-error ["Failed to save message!"]}}))))))}}]])
+                           (response/internal-server-error
+                            {:errors {:server-error ["Failed to save message!"]}}))))))}}]
+   ["/login" {:post
+              {:parameters
+               {:body
+                {:login    string?
+                 :password string?}}
+               :responses
+               {200 {:body
+                     {:identity
+                      {:login      string?
+                       :created_at inst?}}}
+                401 {:body
+                     {:message string?}}}
+               :handler
+               (fn [{{{:keys [login password]} :body} :parameters
+                     session                          :session}]
+                 (if-some [user (auth/authenticate-user login password)]
+                   (->
+                    (response/ok
+                     {:identity user})
+                    (assoc :session (assoc session
+                                           :identity
+                                           user)))
+                   (response/unauthorized
+                    {:message "Incorrect login or password."})))}}]
+   ["/register"
+    {:post {:parameters
+            {:body
+             {:login    string?
+              :password string?
+              :confirm  string?}}
+            :responses
+            {200 {:body {:message string?}}
+             401 {:body {:message string?}}}
+            :handler
+            (fn [{{{:keys [login password confirm]} :body} :parameters}]
+              (if-not (= password confirm)
+                (response/bad-request
+                 {:message "Password and confirm do not match!"})
+                (try
+                  (auth/create-user! login password)
+                  (response/ok
+                   {:message "User creation successful. Please log in."})
+                  (catch clojure.lang.ExceptionInfo e
+                     (if (= (:guestbook/error-id (ex-data e))
+                            ::auth/duplicate-user)
+                       (response/conflict
+                        {:message "Registration failed! User with login already exists!"})
+                       (throw e))))))}}]])

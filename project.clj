@@ -6,6 +6,7 @@
                  [cheshire "5.9.0"]
                  [clojure.java-time "0.3.2"]
                  [org.postgresql/postgresql "42.2.6"]
+                 [buddy "2.0.0"]
                  [conman "0.8.4"]
                  [cprop "0.1.15"]
                  [expound "0.8.3"]
