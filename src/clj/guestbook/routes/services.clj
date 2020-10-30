@@ -49,6 +49,7 @@
                     {:messages
                      [{:id        pos-int?
                        :name      string?
+                       :author    (ds/maybe string?)
                        :message   string?
                        :timestamp inst?}]}}}
 
@@ -65,10 +66,12 @@
                   500 {:errors map?}}
 
                  :handler
-                 (fn [{{params :body} :parameters}]
+                 (fn [{{params :body}     :parameters
+                       {:keys [identity]} :session}]
                    (try
-                     (msg/save-message! params)
-                     (response/ok {:status :ok})
+                     (->> (msg/save-message! identity params)
+                          (assoc {:status :ok} :post)
+                          (response/ok))
                      (catch Exception e
                        (let [{id     :guestbook/error-id
                               errors :errors} (ex-data e)]
@@ -121,11 +124,11 @@
                   (response/ok
                    {:message "User creation successful. Please log in."})
                   (catch clojure.lang.ExceptionInfo e
-                     (if (= (:guestbook/error-id (ex-data e))
-                            ::auth/duplicate-user)
-                       (response/conflict
-                        {:message "Registration failed! User with login already exists!"})
-                       (throw e))))))}}]
+                    (if (= (:guestbook/error-id (ex-data e))
+                           ::auth/duplicate-user)
+                      (response/conflict
+                       {:message "Registration failed! User with login already exists!"})
+                      (throw e))))))}}]
    ["/session"
     {:get {:responses
            {200
@@ -133,7 +136,7 @@
              {:session
               {:identity
                (ds/maybe
-                {:login string?
+                {:login      string?
                  :created_at inst?})}}}}
            :handler
            (fn [{{:keys [identity]} :session}]
@@ -148,3 +151,4 @@
             :handler
             (fn [_]
               (response/ok {}))}}]])
+
