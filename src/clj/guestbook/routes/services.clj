@@ -13,7 +13,9 @@
    [guestbook.middleware :as middleware]
    [guestbook.middleware.formats :as formats]
    [ring.util.http-response :as response]
-   [spec-tools.data-spec :as ds]))
+   [spec-tools.data-spec :as ds]
+   [guestbook.auth.ring :refer [wrap-authorised get-roles-from-match]]
+   [clojure.tools.logging :as log]))
 
 (defn service-routes []
   ["/api"
@@ -32,17 +34,38 @@
                  ;; coercing request parameters
                  coercion/coerce-request-middleware
                  ;; multipart params
-                 multipart/multipart-middleware]
+                 multipart/multipart-middleware
+                 ;;
+                 (fn [handler]
+                   (wrap-authorised
+                    handler
+                    (fn handle-unauthorised [req]
+                      (let [route-roles (get-roles-from-match req)]
+                        (log/debug
+                         "Roles for route: "
+                         (:uri req)
+                         route-roles)
+                        (log/debug "User is unauthorised!"
+                                   (-> req
+                                       :session
+                                       :identity
+                                       :roles))
+                        (response/forbidden
+                         {:message
+                          (str "User must have one of the following roles: "
+                               route-roles)})))))]
     :muuntaja   formats/instance
     :coercion   spec-coercion/coercion
     :swagger    {:id :api}}
-   ["" {:no-doc true}
+   ["" {:no-doc true
+        ::auth/roles (auth/roles :swagger/swagger)}
     ["/swagger.json"
      {:get (swagger/create-swagger-handler)}]
     ["/swagger-ui*"
      {:get (swagger-ui/create-swagger-ui-handler
             {:url "/api/swagger.json"})}]]
-   ["/messages" {:get
+   ["/messages" {::auth/roles (auth/roles :messages/list)
+                 :get
                  {:responses
                   {200
                    {:body ;; Data spec for response body
@@ -56,7 +79,8 @@
                   :handler
                   (fn [_]
                     (response/ok (msg/message-list)))}}]
-   ["/message" {:post
+   ["/message" {::auth/roles (auth/roles :message/create!)
+                :post
                 {:parameters
                  {:body ;; Data spec for request body parameters
                   {:name    string?
@@ -81,7 +105,8 @@
                            ;; else
                            (response/internal-server-error
                             {:errors {:server-error ["Failed to save message!"]}}))))))}}]
-   ["/login" {:post
+   ["/login" {::auth/roles (auth/roles :auth/login)
+              :post
               {:parameters
                {:body
                 {:login    string?
@@ -106,7 +131,8 @@
                    (response/unauthorized
                     {:message "Incorrect login or password."})))}}]
    ["/register"
-    {:post {:parameters
+    {::auth/roles (auth/roles :auth/register)
+     :post {:parameters
             {:body
              {:login    string?
               :password string?
@@ -130,7 +156,8 @@
                        {:message "Registration failed! User with login already exists!"})
                       (throw e))))))}}]
    ["/session"
-    {:get {:responses
+    {::auth/roles (auth/roles :session/get)
+     :get {:responses
            {200
             {:body
              {:session
@@ -145,10 +172,10 @@
                             (not-empty
                              (select-keys identity [:login :created_at]))}}))}}]
    ["/logout" ;; TODO : Does anything need to happen server-side?
-    {:post {:responses
+    {::auth/roles (auth/roles :auth/logout)
+     :post {:responses
             {200
              {:body map?}}
             :handler
             (fn [_]
               (response/ok {}))}}]])
-

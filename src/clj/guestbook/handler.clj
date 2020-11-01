@@ -37,3 +37,8 @@
 
 (defn app []
   (middleware/wrap-base #'app-routes))
+
+(comment
+  (require '[ring.mock.request])
+  ((app) (ring.mock.request/request :get "/api/messages"))
+  (ring.mock.request/request :get "/"))
