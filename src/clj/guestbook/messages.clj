@@ -12,3 +12,6 @@
 
 (defn message-list []
   {:messages (vec (db/get-messages))})
+
+(defn messages-by-author [author]
+  {:messages (vec (db/get-messages-by-author {:author author}))})

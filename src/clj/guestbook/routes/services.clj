@@ -64,21 +64,36 @@
     ["/swagger-ui*"
      {:get (swagger-ui/create-swagger-ui-handler
             {:url "/api/swagger.json"})}]]
-   ["/messages" {::auth/roles (auth/roles :messages/list)
-                 :get
-                 {:responses
-                  {200
-                   {:body ;; Data spec for response body
-                    {:messages
-                     [{:id        pos-int?
-                       :name      string?
-                       :author    (ds/maybe string?)
-                       :message   string?
-                       :timestamp inst?}]}}}
-
-                  :handler
-                  (fn [_]
-                    (response/ok (msg/message-list)))}}]
+   ["/messages"
+    {::auth/roles (auth/roles :messages/list)}
+    ["" {:get
+         {:responses
+          {200
+           {:body ;; Data spec for response body
+            {:messages
+             [{:id        pos-int?
+               :name      string?
+               :author    (ds/maybe string?)
+               :message   string?
+               :timestamp inst?}]}}}
+          :handler
+          (fn [_]
+            (response/ok (msg/message-list)))}}]
+    ["/by/:author"
+     {:get
+      {:parameters {:path {:author string?}}
+       :responses
+       {200
+        {:body ;; Data spec for response body
+         {:messages
+          [{:id        pos-int?
+            :name      string?
+            :author    (ds/maybe string?)
+            :message   string?
+            :timestamp inst?}]}}}
+       :handler
+       (fn [{{{:keys [author]} :path} :parameters}]
+         (response/ok (msg/messages-by-author author)))}}]]
    ["/message" {::auth/roles (auth/roles :message/create!)
                 :post
                 {:parameters
