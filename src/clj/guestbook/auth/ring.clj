@@ -16,7 +16,6 @@
       (log/error "roles: " roles "is empty for route: " (:uri req))
       false)))
 
-
 (defn get-roles-from-match
   "Get roles required for `req`"
   [req]
@@ -32,4 +31,4 @@
 
 (comment
 
- (ring/get-match {:uri "/api/messages"}))
+  (ring/get-match {:uri "/api/messages"}))

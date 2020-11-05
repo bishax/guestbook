@@ -1,8 +1,8 @@
 (ns guestbook.env
   (:require
-    [selmer.parser :as parser]
-    [clojure.tools.logging :as log]
-    [guestbook.dev-middleware :refer [wrap-dev]]))
+   [selmer.parser :as parser]
+   [clojure.tools.logging :as log]
+   [guestbook.dev-middleware :refer [wrap-dev]]))
 
 (def defaults
   {:init

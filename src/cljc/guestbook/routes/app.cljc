@@ -5,7 +5,6 @@
        :cljs [[guestbook.views.home :as home]
               [guestbook.views.author :as author]])))
 
-
 #?(:clj
    (defn home-page [request]
      (layout/render

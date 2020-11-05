@@ -61,7 +61,7 @@
     (let [reply-fn (or ?reply-fn (fn [_]))
           session  (session/read-session ring-req)
           message  (-> message
-                      (assoc :session session))]
+                       (assoc :session session))]
       (log/debug "Got message with id: " id)
       (if (authorised? auth/roles message)
         (when-some [response (handle-message message)]

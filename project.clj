@@ -65,7 +65,8 @@
                                  [ring/ring-mock "0.4.0"]
                                  [binaryage/devtools "0.9.10"]]
                   :plugins      [[com.jakemccrary/lein-test-refresh "0.24.1"]
-                                 [jonase/eastwood "0.3.5"]]
+                                 [jonase/eastwood "0.3.5"]
+                                 [lein-cljfmt "0.7.0"]]
                   
                   :source-paths ["env/dev/clj" "env/dev/cljs" "env/dev/cljc"]
                   :resource-paths ["env/dev/resources"]
