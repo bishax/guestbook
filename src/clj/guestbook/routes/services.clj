@@ -146,7 +146,7 @@
                    (response/unauthorized
                     {:message "Incorrect login or password."})))}}]
    ["/register"
-    {::auth/roles (auth/roles :auth/register)
+    {::auth/roles (auth/roles :account/register)
      :post {:parameters
             {:body
              {:login    string?

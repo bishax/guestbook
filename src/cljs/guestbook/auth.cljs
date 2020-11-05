@@ -120,8 +120,8 @@
           :params @fields
           :handler (fn [_]
                      (reset! fields {})
-                     (rf/dispatch [:auth/hide-modal :user/register])
-                     (rf/dispatch [:auth/show-modal :user/login]))
+                     (rf/dispatch [:app/hide-modal :user/register])
+                     (rf/dispatch [:app/show-modal :user/login]))
           :error-handler (fn [error-response]
                            (reset! error
                                    (or (:message (:response error-response))
