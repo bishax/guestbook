@@ -4,7 +4,10 @@
    [guestbook.messages :as messages]
    [guestbook.auth :as auth]))
 
-(defn home []
+(def home-controllers
+  [{:start (fn [_] (rf/dispatch [:messages/load]))}])
+
+(defn home [_]
   (let [messages (rf/subscribe [:messages/list])]
     (fn []
       [:div.content>div.columns.is-centered>div.column.is-two-thirds

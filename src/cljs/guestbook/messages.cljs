@@ -6,9 +6,20 @@
    [guestbook.validation :refer [validate-message]]))
 
 (rf/reg-event-fx
+ :messages/load-by-author
+ (fn [{:keys [db]} [_ author]]
+   {:db (assoc db :messages/loading? true
+                  :messages/list nil)
+    :ajax/get {:url (str "/api/messages/by/" author)
+               :success-path [:messages]
+               :success-event [:messages/set]}}))
+
+(rf/reg-event-fx
  :messages/load
  (fn [{:keys [db]} _]
-   {:db       (assoc db :messages/loading? true)
+   {:db       (assoc db
+                     :messages/loading? true
+                     :messages/list nil)
     :ajax/get {:url           "/api/messages"
                ; Event to dispatch on success
                :success-event [:messages/set]
@@ -43,6 +54,13 @@
      (if @loading?
        "Loading Messages"
        "Refresh Messages")]))
+
+(defn message-list-placeholder []
+  [:ul.messages
+   [:li
+    [:p "Loading Messages..."]
+    [:div {:style {:width "10em"}}
+     [:progress.progress.is-dark {:max 100} "30%"]]]])
 
 (defn message-list [messages]
   [:ul.messages
