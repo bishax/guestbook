@@ -188,9 +188,12 @@
                              (select-keys identity [:login :created_at]))}}))}}]
    ["/logout" ;; TODO : Does anything need to happen server-side?
     {::auth/roles (auth/roles :auth/logout)
-     :post {:responses
-            {200
-             {:body map?}}
-            :handler
-            (fn [_]
-              (response/ok {}))}}]])
+     :post {:handler
+            (fn [req]
+              (log/debug (:session req))
+              (->
+               (response/ok)
+               (assoc :session
+                      (select-keys
+                       (:session req)
+                       [:ring.middleware.anti-forgery/anti-forgery-token]))))}}]
