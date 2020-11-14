@@ -8,7 +8,7 @@
     :start (fn [{{:keys [user]} :path}]
              (rf/dispatch [:messages/load-by-author user]))}])
 
-(defn author [{{{:keys [user]} :path} :parameters :as d}]
+(defn author [{{{:keys [user]} :path} :parameters}]
   (let [messages (rf/subscribe [:messages/list])]
     (fn []
       [:div.content>div.columns.is-centered>div.column.is-two-thirds
