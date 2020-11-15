@@ -180,13 +180,14 @@
               {:identity
                (ds/maybe
                 {:login      string?
-                 :created_at inst?})}}}}
+                 :created_at inst?
+                 :profile    map?})}}}}
            :handler
            (fn [{{:keys [identity]} :session}]
              (response/ok {:session
                            {:identity
                             (not-empty
-                             (select-keys identity [:login :created_at]))}}))}}]
+                             (select-keys identity [:login :created_at :profile]))}}))}}]
    ["/logout" ;; TODO : Does anything need to happen server-side?
     {::auth/roles (auth/roles :auth/logout)
      :post {:handler

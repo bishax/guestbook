@@ -2,6 +2,7 @@
   (:require [clojure.string :as string]
             [reagent.core :as r]
             [re-frame.core :as rf]
+            [reitit.frontend.easy :as rtfe]
             [guestbook.modals :as m]
             [ajax.core :refer [POST]]))
 
@@ -105,7 +106,8 @@
    "Log Out"])
 
 (defn nameplate [{:keys [login]}]
-  [:button.button.is-primary
+  [:a.button.is-primary
+   {:href (rtfe/href :guestbook.routes.app/profile)}
    login])
 
 (defn register-button []
